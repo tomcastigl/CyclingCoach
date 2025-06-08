@@ -399,7 +399,7 @@ class DetailedActivityAnalyzer:
             specs=[
                 [{"type": "xy"}, {"type": "xy"}],
                 [{"type": "xy"}, {"type": "mapbox" if has_map else "xy"}],
-                [{"type": "xy"}, {"type": "xy"}]
+                [{"type": "pie"}, {"type": "table"}]
             ],
             vertical_spacing=0.12,
             horizontal_spacing=0.08
@@ -661,7 +661,7 @@ class DetailedActivityAnalyzer:
         # 1. If we have map data with altitude or speed, create enhanced maps
         if has_map:
             if has_altitude:
-                self.create_enhanced_map(df, activity_id, 'altitude', 'Altitude (m)', 'terrain')
+                self.create_enhanced_map(df, activity_id, 'altitude', 'Altitude (m)', 'earth')
             
             if has_speed:
                 self.create_enhanced_map(df, activity_id, 'velocity_smooth', 'Speed (km/h)', 'viridis', multiplier=3.6)
