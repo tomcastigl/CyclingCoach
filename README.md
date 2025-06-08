@@ -1,179 +1,130 @@
-# AI Cycling Coach Assistant 🚴‍♂️
+# CyclingCoach 🚴‍♂️
 
-An intelligent cycling coach assistant that fetches your workout data from Strava, analyzes it, and helps you track your training progress.
+An intelligent cycling coach assistant that fetches your workout data from Strava, analyzes it, and generates interactive dashboards to help you track your training progress.
 
 ## Features
 
-- Authenticate and connect with Strava API
-- Download activity data for the past week (or custom time period)
-- Parse and analyze cycling workouts
-- Generate interactive dashboards and visualizations:
-  - Weekly distance and training load
-  - Heart rate zones analysis
-  - Detailed activity dashboards with maps
-  - Power curves and metrics (if available)
-  - Advanced performance analytics
-- Support for custom training plans
-
-## Prerequisites
-
-- Python 3.7+
-- A Strava account
-- A Strava API application (create one at https://www.strava.com/settings/api)
+- Authenticate with the Strava API to access your cycling data
+- Download and store your recent cycling activities 
+- Analyze your rides with detailed metrics and visualizations:
+  - Weekly distance and time summaries
+  - Heart rate zone distribution
+  - Interactive maps with elevation and speed data
+  - Power metrics (if power data is available)
+  - Comprehensive performance dashboards
 
 ## Installation
 
-### Using pip
+### Prerequisites
 
-```
-pip install -e .
-```
+- Python 3.7+
+- A Strava account
+- Strava API credentials (from https://www.strava.com/settings/api)
 
-### From source
+### Setup
 
 1. Clone the repository:
 ```
-git clone https://github.com/yourusername/CyclingCoach.git
+git clone https://github.com/tomcastigl/CyclingCoach.git
 cd CyclingCoach
 ```
 
-2. Install the package in development mode:
+2. Install the package and dependencies:
 ```
 pip install -e .
 ```
 
-## Getting Started
+## Usage
 
-### 1. Setup the application:
+CyclingCoach provides a convenient command-line interface for all operations:
+
+### Setup and Authentication
+
+Initialize the application and authenticate with Strava:
 
 ```
 cyclingcoach setup
 ```
 
-This will create necessary directories and guide you through the Strava API authentication process.
-
-### 2. Authenticate with Strava API:
-
-If you need to re-authenticate:
+If you need to re-authenticate later:
 
 ```
 cyclingcoach auth
 ```
 
-Follow the prompts to create a Strava API application and complete the authentication process. This will create a `.env` file in the `config` directory with your access tokens.
+### Fetching Activities
 
-## Usage
-
-### Quick all-in-one analysis:
-
-Run complete analysis on all your activities from the past week:
+Download your recent cycling activities:
 
 ```
-cyclingcoach all
+cyclingcoach fetch --days 7
 ```
 
-This command will:
-1. Fetch your latest activities from Strava
-2. Run basic analysis and generate summary statistics
-3. Create detailed activity dashboards for each workout
-4. Save all results to the data directory
+### Analysis Options
 
-### Fetch recent activities:
-
-```
-cyclingcoach fetch --days 14
-```
-
-### Run basic analysis on existing data:
+Run a quick analysis on your recent activities:
 
 ```
 cyclingcoach basic
 ```
 
-### Analyze a specific type of activity:
-
-```
-cyclingcoach basic --activity_type "Run"
-```
-
-### Get detailed activity dashboards:
-
-#### List available activities:
-
-```
-cyclingcoach detailed
-```
-
-#### Analyze a specific activity:
-
-```
-cyclingcoach detailed --activity_id <ID>
-```
-
-#### Analyze all recent activities:
+Generate detailed interactive dashboards:
 
 ```
 cyclingcoach detailed --all
 ```
 
-#### Analyze activities of a specific type:
+### All-in-One Command
+
+For a complete workflow (fetch, analyze, create dashboards):
 
 ```
-cyclingcoach detailed --activity_type "Ride" --all
+cyclingcoach all
 ```
 
 ## Interactive Dashboards
 
-The detailed analysis includes interactive dashboards with:
+The application generates Plotly-based interactive dashboards that include:
 
-- Combined heart rate, power, cadence, and speed visualizations
-- Route maps with color coding for altitude and speed
+- Combined visualizations of heart rate, power, cadence, and speed
+- Color-coded route maps showing elevation and intensity
 - Heart rate zone distribution charts
 - Performance metrics tables
 - Altitude profiles
 
-Each dashboard is saved as an interactive HTML file in `data/figures/detailed/<activity_id>/dashboard.html`.
+Dashboards are saved as HTML files in `data/figures/detailed/<activity_id>/dashboard.html`.
 
-## Data Storage
-
-- Activity data is stored in CSV format in the `data` directory
-- Detailed activity data is stored in JSON format in the `data/detailed` directory
-- Visualizations are saved in the `data/figures` directory:
-  - Basic plots in `data/figures/`
-  - Detailed dashboards in `data/figures/detailed/<activity_id>/`
-
-## Training Plan
-
-The project includes a training plan template in `training_plan.md` that can be customized for your specific goals.
-
-## Development
-
-### Project Structure
+## Project Structure
 
 ```
 CyclingCoach/
-├── cyclingcoach/      # Package code
-│   ├── __init__.py
-│   └── cli.py         # Command line interface
 ├── src/               # Core functionality 
-│   ├── __init__.py
-│   ├── analyzer.py    # Basic analysis
-│   ├── detailed_activity.py  # Detailed analysis and dashboards
+│   ├── analyzer.py    # Basic activity analysis
+│   ├── detailed_activity.py  # Advanced analysis and dashboards
 │   ├── strava_api.py  # Strava API interaction
-│   └── strava_auth.py # Authentication
-├── data/              # Data storage
-├── config/            # Configuration files
-├── pyproject.toml     # Package configuration
-└── README.md
+│   └── strava_auth.py # Authentication handling
+├── cyclingcoach/      # CLI interface
+├── data/              # Activity data storage
+│   ├── activities/    # Basic activity data (CSV)
+│   ├── detailed/      # Detailed activity data (JSON)
+│   └── figures/       # Generated visualizations
+├── config/            # Configuration files and credentials
+└── pyproject.toml     # Package configuration
 ```
+
+## Data Storage
+
+- Basic activity summaries are stored as CSV files
+- Detailed activity data is stored in JSON format
+- All visualizations are saved as HTML files for interactive viewing
 
 ## Future Development
 
-- Integration with training plans to compare actual vs. planned workouts
-- Personalized workout recommendations based on previous activities
-- Recovery and readiness metrics
+- Markdown export of activity data for AI-powered analysis
+- Training plan integration to compare actual vs. planned workouts
+- Personalized workout recommendations based on training history
+- Recovery and fatigue tracking
 - Performance trend analysis
-- Integration with other fitness data sources
 
 ## License
 
