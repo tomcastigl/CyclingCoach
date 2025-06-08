@@ -653,9 +653,6 @@ class DetailedActivityAnalyzer:
         # Save as interactive HTML
         fig.write_html(f'data/figures/detailed/{activity_id}/dashboard.html')
         
-        # Save as static image
-        fig.write_image(f'data/figures/detailed/{activity_id}/dashboard.png')
-        
         # Create individual plots for specific sections (optional)
         
         # 1. If we have map data with altitude or speed, create enhanced maps

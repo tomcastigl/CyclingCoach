@@ -116,9 +116,7 @@ class ActivityAnalyzer:
         # Save figure
         os.makedirs('data/figures', exist_ok=True)
         fig.write_html(f'data/figures/weekly_{activity_type.lower()}_distance.html')
-        fig.write_image(f'data/figures/weekly_{activity_type.lower()}_distance.png')
-        
-        print(f"Weekly {activity_type} distance plot saved to data/figures/weekly_{activity_type.lower()}_distance.png")
+        print(f"Weekly {activity_type} distance plot saved to data/figures/")
     
     def plot_heartrate_zones(self, activity_type='Ride'):
         """Plot time spent in heart rate zones"""
@@ -177,9 +175,7 @@ class ActivityAnalyzer:
         # Save figure
         os.makedirs('data/figures', exist_ok=True)
         fig.write_html(f'data/figures/{activity_type.lower()}_hr_zones.html')
-        fig.write_image(f'data/figures/{activity_type.lower()}_hr_zones.png')
-        
-        print(f"{activity_type} heart rate zones plot saved to data/figures/{activity_type.lower()}_hr_zones.png")
+        print(f"{activity_type} heart rate zones plot saved to data/figures/")
     
     def training_load_analysis(self, activity_type='Ride'):
         """Analyze training load using moving time and heart rate"""
@@ -253,9 +249,7 @@ class ActivityAnalyzer:
             # Save figure
             os.makedirs('data/figures', exist_ok=True)
             fig.write_html(f'data/figures/{activity_type.lower()}_training_load.html')
-            fig.write_image(f'data/figures/{activity_type.lower()}_training_load.png')
-            
-            print(f"{activity_type} training load plot saved to data/figures/{activity_type.lower()}_training_load.png")
+            print(f"{activity_type} training load plot saved to data/figures/")
         else:
             print("Heart rate or moving time data not available for training load analysis")
 
