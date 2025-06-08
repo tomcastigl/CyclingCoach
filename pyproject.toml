@@ -1,6 +1,4 @@
 [build-system]
-name = "setuptools"
-version = ">=61.0"
 requires = ["setuptools>=61.0", "wheel"]
 build-backend = "setuptools.build_meta"
 
@@ -33,13 +31,13 @@ dev = [
 ]
 
 [project.scripts]
-coach = "cyclingcoach.cli:main"
+coach = "src.cli:main"
 
 [tool.setuptools]
-packages = ["src", "cyclingcoach"]
+packages = ["src"]
 
 [tool.setuptools.package-data]
-cyclingcoach = ["*.json", "*.md"]
+src = ["*.json", "*.md"]
 
 [tool.black]
 line-length = 88
