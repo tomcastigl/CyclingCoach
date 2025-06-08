@@ -1,0 +1,54 @@
+# Python virtual environments
+venv/
+cyclingcoach/
+cycling_venv/
+.venv/
+env/
+ENV/
+
+# Python cache files
+__pycache__/
+*.py[cod]
+*$py.class
+.pytest_cache/
+.coverage
+htmlcov/
+
+# Distribution / packaging
+dist/
+build/
+*.egg-info/
+
+# IDEs and editors
+.idea/
+.vscode/
+*.swp
+*.swo
+.DS_Store
+
+# Jupyter Notebook
+.ipynb_checkpoints
+
+# Large data files
+*.csv
+*.xlsx
+*.parquet
+data/raw/
+data/processed/
+data/external/
+
+# Credentials and secrets
+.env
+config/.env
+*.pem
+*.key
+
+# Logs
+logs/
+*.log
+
+# OS specific
+.DS_Store
+Thumbs.db 
+
+data/
