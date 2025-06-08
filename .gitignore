@@ -42,6 +42,7 @@ data/external/
 config/.env
 *.pem
 *.key
+config/
 
 # Logs
 logs/
