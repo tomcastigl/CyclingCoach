@@ -43,13 +43,13 @@ CyclingCoach provides a convenient command-line interface for all operations:
 Initialize the application and authenticate with Strava:
 
 ```
-cyclingcoach setup
+coach setup
 ```
 
 If you need to re-authenticate later:
 
 ```
-cyclingcoach auth
+coach auth
 ```
 
 ### Fetching Activities
@@ -57,7 +57,7 @@ cyclingcoach auth
 Download your recent cycling activities:
 
 ```
-cyclingcoach fetch --days 7
+coach fetch --days 7
 ```
 
 ### Analysis Options
@@ -65,13 +65,13 @@ cyclingcoach fetch --days 7
 Run a quick analysis on your recent activities:
 
 ```
-cyclingcoach basic
+coach basic
 ```
 
 Generate detailed interactive dashboards:
 
 ```
-cyclingcoach detailed --all
+coach detailed --all
 ```
 
 ### All-in-One Command
@@ -79,7 +79,7 @@ cyclingcoach detailed --all
 For a complete workflow (fetch, analyze, create dashboards):
 
 ```
-cyclingcoach all
+coach all
 ```
 
 ## Interactive Dashboards

@@ -33,11 +33,10 @@ dev = [
 ]
 
 [project.scripts]
-cyclingcoach = "cyclingcoach.cli:main"
+coach = "cyclingcoach.cli:main"
 
 [tool.setuptools]
-packages = ["cyclingcoach", "src"]
-package-dir = {"" = "."}
+packages = ["src", "cyclingcoach"]
 
 [tool.setuptools.package-data]
 cyclingcoach = ["*.json", "*.md"]
