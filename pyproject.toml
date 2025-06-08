@@ -1,0 +1,54 @@
+[build-system]
+name = "setuptools"
+version = ">=61.0"
+requires = ["setuptools>=61.0", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "cyclingcoach"
+version = "0.1.0"
+description = "An intelligent cycling coach assistant that uses Strava data"
+readme = "README.md"
+requires-python = ">=3.7"
+license = {text = "MIT"}
+authors = [
+    {name = "CyclingCoach Team", email = "example@example.com"}
+]
+
+dependencies = [
+    "requests==2.31.0",
+    "python-dotenv==1.0.0",
+    "numpy==1.24.3",
+    "pandas==2.0.3",
+    "matplotlib==3.7.2",
+    "plotly==5.15.0",
+    "kaleido==0.2.1",  # For static image export with plotly
+]
+
+[project.optional-dependencies]
+dev = [
+    "black",
+    "isort",
+    "pytest",
+]
+
+[project.scripts]
+cyclingcoach = "cyclingcoach.cli:main"
+
+[tool.setuptools]
+packages = ["cyclingcoach", "src"]
+package-dir = {"" = "."}
+
+[tool.setuptools.package-data]
+cyclingcoach = ["*.json", "*.md"]
+
+[tool.black]
+line-length = 88
+target-version = ["py37"]
+
+[tool.isort]
+profile = "black"
+line_length = 88
+
+[tool.pytest]
+testpaths = ["tests"] 
