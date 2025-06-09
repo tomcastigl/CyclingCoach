@@ -163,22 +163,3 @@ def create_activity(access_token):
     except Exception as e:
         print(f"Error creating activity: {e}")
         return None
-
-def main():
-    # Load credentials
-    client_id, client_secret, refresh_token = load_credentials()
-    
-    if not client_id or not client_secret or not refresh_token:
-        return
-    
-    # Get access token
-    access_token = get_access_token(client_id, client_secret, refresh_token)
-    
-    if not access_token:
-        return
-    
-    # Create activity
-    create_activity(access_token)
-
-if __name__ == "__main__":
-    main() 

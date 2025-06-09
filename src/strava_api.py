@@ -165,38 +165,3 @@ class StravaAPI:
             return None
         
         return response.json()
-
-def main():
-    # Initialize Strava API
-    strava = StravaAPI()
-    
-    # Get activities from the past week
-    activities = strava.get_activities(days=7)
-    
-    if activities:
-        print(f"Retrieved {len(activities)} activities")
-        
-        # Parse activities
-        activities_df = strava.parse_activities(activities)
-        
-        # Save activities
-        strava.save_activities(activities_df)
-        
-        # Print summary
-        if activities_df is not None:
-            print("\nActivity Summary:")
-            print(f"Total Activities: {len(activities_df)}")
-            print(f"Activity Types: {activities_df['type'].value_counts().to_dict()}")
-            
-            if 'distance' in activities_df.columns:
-                total_distance = activities_df['distance'].sum() / 1000  # convert to km
-                print(f"Total Distance: {total_distance:.2f} km")
-            
-            if 'moving_time' in activities_df.columns:
-                total_time = activities_df['moving_time'].sum() / 3600  # convert to hours
-                print(f"Total Moving Time: {total_time:.2f} hours")
-    else:
-        print("No activities found")
-
-if __name__ == "__main__":
-    main() 

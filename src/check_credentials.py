@@ -20,6 +20,3 @@ def check_credentials():
     print(f"STRAVA_CLIENT_ID: {'*****' + client_id[-4:] if client_id else 'Not set'}")
     print(f"STRAVA_CLIENT_SECRET: {'*' * 20 + client_secret[-4:] if client_secret else 'Not set'}")
     print(f"STRAVA_REFRESH_TOKEN: {'*' * 20 + refresh_token[-4:] if refresh_token else 'Not set'}")
-
-if __name__ == "__main__":
-    check_credentials() 

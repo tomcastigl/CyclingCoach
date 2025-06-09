@@ -252,23 +252,3 @@ class ActivityAnalyzer:
             print(f"{activity_type} training load plot saved to data/figures/")
         else:
             print("Heart rate or moving time data not available for training load analysis")
-
-def main():
-    # Initialize analyzer
-    analyzer = ActivityAnalyzer()
-    
-    if analyzer.df is not None:
-        # Print summary statistics
-        stats = analyzer.summary_stats()
-        if stats:
-            print("\nActivity Summary:")
-            for key, value in stats.items():
-                print(f"{key}: {value:.2f}" if isinstance(value, float) else f"{key}: {value}")
-        
-        # Generate plots
-        analyzer.plot_weekly_distance()
-        analyzer.plot_heartrate_zones()
-        analyzer.training_load_analysis()
-
-if __name__ == "__main__":
-    main() 
