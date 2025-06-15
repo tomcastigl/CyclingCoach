@@ -9,6 +9,7 @@ import argparse
 import plotly.express as px
 import plotly.graph_objects as go
 from plotly.subplots import make_subplots
+import yaml
 
 # Set default theme for all plots
 px.defaults.template = "plotly_dark"
@@ -28,6 +29,14 @@ class DetailedActivityAnalyzer:
     def __init__(self):
         """Initialize the analyzer with Strava API"""
         self.strava = StravaAPI()
+        # Load user zones from YAML
+        self.hr_zones = []
+        try:
+            with open('config/zones.yaml', 'r') as f:
+                zones_config = yaml.safe_load(f)
+                self.hr_zones = zones_config.get('hr_zones', [])
+        except Exception as e:
+            print(f"Warning: Could not load HR zones from config/zones.yaml: {e}")
         
         # Create data directories if they don't exist
         os.makedirs('data/detailed', exist_ok=True)
@@ -219,9 +228,6 @@ class DetailedActivityAnalyzer:
                     'average': power_data.mean(),
                     'max': power_data.max(),
                     'normalized_power': self.calculate_normalized_power(power_data),
-                    # Calculate power zones based on FTP
-                    # FTP could be provided as input or estimated
-                    'ftp_estimate': self.estimate_ftp(power_data)
                 }
                 
                 # Calculate power curve (best power for different durations)
@@ -291,27 +297,6 @@ class DetailedActivityAnalyzer:
         # Average and take 4th root
         if len(power_30s_4) > 0:
             return np.power(np.mean(power_30s_4), 0.25)
-        else:
-            return None
-    
-    def estimate_ftp(self, power_series):
-        """Estimate FTP from power data (simple method: 95% of 20-min max power)"""
-        if len(power_series) < 1200:  # at least 20 minutes of data (assuming 1s intervals)
-            return None
-        
-        # Convert to numpy array
-        power_array = power_series.to_numpy()
-        
-        # Calculate 20-minute moving average
-        window_size = 1200  # 20 minutes at 1 second intervals
-        weights = np.ones(window_size) / window_size
-        power_20min = np.convolve(power_array, weights, 'valid')
-        
-        # Find max 20-minute power
-        if len(power_20min) > 0:
-            max_20min_power = np.max(power_20min)
-            # FTP is approximately 95% of 20-minute power
-            return max_20min_power * 0.95
         else:
             return None
     
@@ -396,8 +381,8 @@ class DetailedActivityAnalyzer:
         has_cadence = 'cadence' in df.columns and not df['cadence'].isna().all()
         has_altitude = 'altitude' in df.columns and not df['altitude'].isna().all()
         has_map = 'latitude' in df.columns and 'longitude' in df.columns
-        
-        # Create a figure with appropriate number of subplots
+
+        # Create a figure with appropriate number of subplots (restore 3x2 grid for table and pie chart)
         fig = make_subplots(
             rows=3, 
             cols=2,
@@ -406,33 +391,51 @@ class DetailedActivityAnalyzer:
                 "Speed & Cadence Over Time" if has_speed or has_cadence else "Activity Data",
                 "Altitude Profile" if has_altitude else "Activity Data",
                 "Route Map" if has_map else "Activity Data",
-                "Heart Rate Zone Distribution" if has_hr else "Activity Data",
-                "Performance Metrics"
+                "Performance Metrics",
+                "Heart Rate Zone Distribution (User Zones)"
             ),
             specs=[
                 [{"type": "xy"}, {"type": "xy"}],
                 [{"type": "xy"}, {"type": "mapbox" if has_map else "xy"}],
-                [{"type": "pie"}, {"type": "table"}]
+                [{"type": "table"}, {"type": "pie"}]
             ],
             vertical_spacing=0.12,
             horizontal_spacing=0.08
         )
-        
+
         # 1. Heart Rate & Power
         if has_hr or has_power:
-            # Primary y-axis for heart rate
             if has_hr:
+                # Calculate sampling interval in seconds
+                if len(df['time']) > 1:
+                    sampling_interval = df['time'].iloc[1] - df['time'].iloc[0]
+                    if sampling_interval == 0:
+                        sampling_interval = 1
+                else:
+                    sampling_interval = 1
+                window_size = max(1, int(30 / sampling_interval))
+                hr_rolling = df['heartrate'].rolling(window=window_size, min_periods=1, center=True).mean()
+                # Raw HR line
                 fig.add_trace(
                     go.Scatter(
                         x=df['time']/60, 
                         y=df['heartrate'],
                         name="Heart Rate",
-                        line=dict(color="#e74c3c", width=2)
+                        line=dict(color="#e74c3c", width=1.5),
+                        opacity=0.6
                     ),
                     row=1, col=1
                 )
-            
-            # Secondary y-axis for power
+                # 30s moving average HR line
+                fig.add_trace(
+                    go.Scatter(
+                        x=df['time']/60,
+                        y=hr_rolling,
+                        name="HR (30s avg)",
+                        line=dict(color="#00d8ff", width=1.5)
+                    ),
+                    row=1, col=1
+                )
             if has_power:
                 fig.add_trace(
                     go.Scatter(
@@ -444,8 +447,6 @@ class DetailedActivityAnalyzer:
                     ),
                     row=1, col=1
                 )
-                
-                # Add secondary y-axis
                 fig.update_layout(
                     yaxis2=dict(
                         title="Power (watts)",
@@ -456,14 +457,24 @@ class DetailedActivityAnalyzer:
                         side="right"
                     )
                 )
-            
-            # Update layout for this subplot
             fig.update_xaxes(title_text="Time (minutes)", row=1, col=1)
             fig.update_yaxes(title_text="Heart Rate (bpm)" if has_hr else "", row=1, col=1)
-        
+            # Add legend for this subplot only
+            fig.update_layout(
+                legend=dict(
+                    orientation="h",
+                    yanchor="top",
+                    y=0.99,
+                    xanchor="left",
+                    x=0.01,
+                    bgcolor="rgba(0,0,0,0.5)",
+                    bordercolor="#333",
+                    borderwidth=1
+                )
+            )
+
         # 2. Speed & Cadence
         if has_speed or has_cadence:
-            # Primary y-axis for speed
             if has_speed:
                 fig.add_trace(
                     go.Scatter(
@@ -474,8 +485,6 @@ class DetailedActivityAnalyzer:
                     ),
                     row=1, col=2
                 )
-            
-            # Secondary y-axis for cadence
             if has_cadence:
                 fig.add_trace(
                     go.Scatter(
@@ -487,8 +496,6 @@ class DetailedActivityAnalyzer:
                     ),
                     row=1, col=2
                 )
-                
-                # Add secondary y-axis
                 fig.update_layout(
                     yaxis3=dict(
                         title="Cadence (rpm)",
@@ -499,11 +506,9 @@ class DetailedActivityAnalyzer:
                         side="right"
                     )
                 )
-            
-            # Update layout for this subplot
             fig.update_xaxes(title_text="Time (minutes)", row=1, col=2)
             fig.update_yaxes(title_text="Speed (km/h)" if has_speed else "", row=1, col=2)
-        
+
         # 3. Altitude Profile
         if has_altitude:
             if 'distance' in df.columns:
@@ -512,7 +517,6 @@ class DetailedActivityAnalyzer:
             else:
                 x_data = df['time']/60  # Convert to minutes
                 x_label = "Time (minutes)"
-                
             fig.add_trace(
                 go.Scatter(
                     x=x_data, 
@@ -523,11 +527,9 @@ class DetailedActivityAnalyzer:
                 ),
                 row=2, col=1
             )
-            
-            # Update layout for this subplot
             fig.update_xaxes(title_text=x_label, row=2, col=1)
             fig.update_yaxes(title_text="Altitude (m)", row=2, col=1)
-        
+
         # 4. Route Map
         if has_map:
             fig.add_trace(
@@ -540,12 +542,8 @@ class DetailedActivityAnalyzer:
                 ),
                 row=2, col=2
             )
-            
-            # Calculate the center of the map
             center_lat = df['latitude'].mean()
             center_lon = df['longitude'].mean()
-            
-            # Update the mapbox configuration
             fig.update_layout(
                 mapbox=dict(
                     style="carto-darkmatter",
@@ -553,77 +551,28 @@ class DetailedActivityAnalyzer:
                     zoom=11
                 )
             )
-        
-        # 5. Heart Rate Zone Distribution
-        if has_hr:
-            # Define heart rate zones (approximate, should be customized per athlete)
-            max_hr = df['heartrate'].max()
-            
-            # Calculate heart rate zones based on max HR
-            zones = {
-                'Z1 (Easy)': (0, int(max_hr * 0.6)),
-                'Z2 (Endurance)': (int(max_hr * 0.6), int(max_hr * 0.7)),
-                'Z3 (Tempo)': (int(max_hr * 0.7), int(max_hr * 0.8)),
-                'Z4 (Threshold)': (int(max_hr * 0.8), int(max_hr * 0.9)),
-                'Z5 (Max)': (int(max_hr * 0.9), int(max_hr * 1.1))
-            }
-            
-            # Calculate time spent in each zone
-            zone_data = []
-            zone_labels = []
-            zone_colors = ['#3498db', '#2ecc71', '#f1c40f', '#e67e22', '#e74c3c']
-            
-            for i, (zone, (lower, upper)) in enumerate(zones.items()):
-                zone_mask = (df['heartrate'] >= lower) & (df['heartrate'] < upper)
-                if any(zone_mask):
-                    # Calculate time in minutes
-                    if 'time' in df.columns:
-                        zone_time = zone_mask.sum() / 60  # Approximate time in minutes based on data points
-                        zone_data.append(zone_time)
-                        zone_labels.append(zone)
-            
-            # Create pie chart
-            fig.add_trace(
-                go.Pie(
-                    labels=zone_labels,
-                    values=zone_data,
-                    name="HR Zones",
-                    marker=dict(colors=zone_colors),
-                    textinfo='percent',
-                    hoverinfo='label+percent',
-                    hole=0.3
-                ),
-                row=3, col=1
-            )
-        
-        # 6. Performance Metrics
+
+        # 5. Performance Metrics Table (row 3, col 1)
         metrics = []
         values = []
-        
         if has_hr:
             metrics.extend(["Avg HR", "Max HR"])
             values.extend([df['heartrate'].mean(), df['heartrate'].max()])
-        
         if has_power:
             metrics.extend(["Avg Power", "Max Power", "NP (est)"])
             np_est = self.calculate_normalized_power(df['watts'])
             values.extend([df['watts'].mean(), df['watts'].max(), np_est if np_est else 0])
-        
         if has_speed:
             metrics.extend(["Avg Speed", "Max Speed"])
             values.extend([df['velocity_smooth'].mean() * 3.6, df['velocity_smooth'].max() * 3.6])
-        
         if has_cadence:
             metrics.extend(["Avg Cadence"])
             values.extend([df[df['cadence'] > 0]['cadence'].mean()])
-        
         if has_altitude:
             altitude_diff = df['altitude'].diff().fillna(0)
             elevation_gain = altitude_diff[altitude_diff > 0].sum()
             metrics.extend(["Elevation Gain"])
             values.extend([elevation_gain])
-        
-        # Create a table
         fig.add_trace(
             go.Table(
                 header=dict(
@@ -639,30 +588,42 @@ class DetailedActivityAnalyzer:
                     font=dict(color='white', size=12)
                 )
             ),
-            row=3, col=2
+            row=3, col=1
         )
-        
-        # Update overall layout
+
+        # 5. HR Zone Pie Chart (user-specified zones)
+        if has_hr and self.hr_zones:
+            zone_labels = [z['name'] for z in self.hr_zones]
+            zone_counts = []
+            for z in self.hr_zones:
+                mask = (df['heartrate'] >= z['min']) & (df['heartrate'] <= z['max'])
+                zone_counts.append(mask.sum())
+            fig.add_trace(
+                go.Pie(
+                    labels=zone_labels,
+                    values=zone_counts,
+                    name="HR Zones",
+                    textinfo='percent',
+                    hoverinfo='label+percent',
+                    hole=0.3
+                ),
+                row=3, col=2
+            )
+
+        # Update overall layout (remove legend)
         fig.update_layout(
             title=dict(
                 text=f"{activity_name} - Activity Dashboard",
                 font=dict(size=24)
             ),
-            showlegend=True,
-            legend=dict(
-                orientation="h",
-                yanchor="bottom",
-                y=1.02,
-                xanchor="right",
-                x=1
-            ),
+            showlegend=False,
             autosize=False,
             width=1200,
-            height=1200,
+            height=1000,
             margin=dict(l=50, r=50, b=50, t=100),
             template="plotly_dark"
         )
-        
+
         # Save as interactive HTML
         fig.write_html(f'data/figures/detailed/{folder_name}/dashboard.html')
         

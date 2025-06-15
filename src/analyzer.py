@@ -4,6 +4,7 @@ from datetime import datetime, timedelta
 import plotly.express as px
 import plotly.graph_objects as go
 from plotly.subplots import make_subplots
+import matplotlib.pyplot as plt
 
 # Set default theme for all plots
 px.defaults.template = "plotly_dark"
@@ -72,122 +73,58 @@ class ActivityAnalyzer:
         
         return stats
     
-    def plot_weekly_distance(self, activity_type='Ride'):
-        """Plot weekly distance for a specific activity type"""
-        if self.df is None or len(self.df) == 0:
-            print("No activities available for plotting")
+    def plot_weekly_distance(self, activity_type=None):
+        """Plot weekly distance for activities"""
+        if self.df is None:
             return
         
-        # Filter by activity type
-        df = self.filter_activity_type(activity_type)
+        df = self.filter_activity_type(activity_type) if activity_type else self.df
         
-        if df is None or len(df) == 0:
-            print(f"No {activity_type} activities found")
+        # Only show weekly distance if we have at least 1 month of data
+        if (pd.to_datetime(df['start_date_local'].max()) - pd.to_datetime(df['start_date_local'].min())).days < 30:
             return
+            
+        # Convert to datetime and set as index
+        df['start_date_local'] = pd.to_datetime(df['start_date_local'])
+        df.set_index('start_date_local', inplace=True)
         
-        # Resample by week and calculate total distance
-        df = df.set_index('start_date_local')
-        weekly_distance = df['distance'].resample('W').sum() / 1000  # Convert to km
-        
-        # Reset index to make date a column for plotting
-        weekly_distance = weekly_distance.reset_index()
-        weekly_distance.columns = ['Week', 'Distance (km)']
+        # Resample to weekly and sum distances
+        weekly_distance = df['distance'].resample('W').sum()
         
         # Create the plot
-        fig = px.bar(
-            weekly_distance, 
-            x='Week', 
-            y='Distance (km)',
-            title=f'Weekly {activity_type} Distance',
-            labels={'Week': 'Week', 'Distance (km)': 'Distance (km)'},
-            color_discrete_sequence=['#36A2EB']
-        )
+        fig = go.Figure()
+        fig.add_trace(go.Bar(
+            x=weekly_distance.index,
+            y=weekly_distance.values,
+            name='Weekly Distance'
+        ))
         
         fig.update_layout(
-            title_font_size=24,
-            xaxis_title_font_size=18,
-            yaxis_title_font_size=18,
-            legend_title_font_size=18,
-            legend_font_size=15,
+            title='Weekly Ride Distance',
+            xaxis_title='Week',
+            yaxis_title='Distance (km)',
+            template='plotly_dark',
             height=600,
             width=1000
         )
         
-        # Save figure
+        # Save the plot
         os.makedirs('data/figures', exist_ok=True)
-        fig.write_html(f'data/figures/weekly_{activity_type.lower()}_distance.html')
-        print(f"Weekly {activity_type} distance plot saved to data/figures/")
+        fig.write_html('data/figures/weekly_distance.html')
     
-    def plot_heartrate_zones(self, activity_type='Ride'):
-        """Plot time spent in heart rate zones"""
-        if self.df is None or len(self.df) == 0:
-            print("No activities available for plotting")
-            return
-        
-        # Filter by activity type
-        df = self.filter_activity_type(activity_type)
-        
-        if df is None or len(df) == 0 or 'average_heartrate' not in df.columns:
-            print(f"No {activity_type} activities with heart rate data found")
-            return
-        
-        # Define heart rate zones (approximate, should be customized per athlete)
-        zone_boundaries = [0, 120, 140, 160, 180, 200]
-        zone_names = ['Z1', 'Z2', 'Z3', 'Z4', 'Z5']
-        
-        # Create heart rate zone column
-        df['hr_zone'] = pd.cut(
-            df['average_heartrate'], 
-            bins=zone_boundaries, 
-            labels=zone_names,
-            right=False
-        )
-        
-        # Calculate time spent in each zone
-        zone_time = df.groupby('hr_zone')['moving_time'].sum() / 60  # Convert to minutes
-        zone_time = zone_time.reset_index()
-        zone_time.columns = ['Heart Rate Zone', 'Time (minutes)']
-        
-        # Create color map for zones
-        colors = ['#3498db', '#2ecc71', '#f1c40f', '#e67e22', '#e74c3c']
-        
-        # Create the plot
-        fig = px.bar(
-            zone_time, 
-            x='Heart Rate Zone', 
-            y='Time (minutes)',
-            title=f'Time Spent in Heart Rate Zones ({activity_type})',
-            labels={'Heart Rate Zone': 'Heart Rate Zone', 'Time (minutes)': 'Time (minutes)'},
-            color='Heart Rate Zone',
-            color_discrete_map={zone: color for zone, color in zip(zone_names, colors)}
-        )
-        
-        fig.update_layout(
-            title_font_size=24,
-            xaxis_title_font_size=18,
-            yaxis_title_font_size=18,
-            legend_title_font_size=18,
-            legend_font_size=15,
-            height=600,
-            width=1000
-        )
-        
-        # Save figure
-        os.makedirs('data/figures', exist_ok=True)
-        fig.write_html(f'data/figures/{activity_type.lower()}_hr_zones.html')
-        print(f"{activity_type} heart rate zones plot saved to data/figures/")
+    def plot_heartrate_zones(self, activity_type=None):
+        """Plot heart rate zones for activities"""
+        # Removed as requested
+        pass
     
-    def training_load_analysis(self, activity_type='Ride'):
+    def training_load_analysis(self, activity_type=None):
         """Analyze training load using moving time and heart rate"""
-        if self.df is None or len(self.df) == 0:
-            print("No activities available for analysis")
+        if self.df is None:
             return
         
-        # Filter by activity type
-        df = self.filter_activity_type(activity_type)
+        df = self.filter_activity_type(activity_type) if activity_type else self.df
         
         if df is None or len(df) == 0:
-            print(f"No {activity_type} activities found")
             return
         
         # Calculate a simple training load score (moving time * average heart rate)
@@ -201,54 +138,34 @@ class ActivityAnalyzer:
             # Calculate 7-day rolling average
             rolling_load = daily_load.rolling(window=7).mean()
             
-            # Prepare data for plotting
-            daily_load_df = daily_load.reset_index()
-            daily_load_df.columns = ['Date', 'Daily Load']
-            
-            rolling_load_df = rolling_load.reset_index()
-            rolling_load_df.columns = ['Date', '7-Day Average']
-            
             # Create the plot
-            fig = make_subplots(specs=[[{"secondary_y": False}]])
+            fig = go.Figure()
             
             # Add daily load bars
-            fig.add_trace(
-                go.Bar(
-                    x=daily_load_df['Date'],
-                    y=daily_load_df['Daily Load'],
-                    name='Daily Load',
-                    marker_color='#3498db'
-                )
-            )
+            fig.add_trace(go.Bar(
+                x=daily_load.index,
+                y=daily_load.values,
+                name='Daily Load',
+                opacity=0.6
+            ))
             
             # Add 7-day average line
-            fig.add_trace(
-                go.Scatter(
-                    x=rolling_load_df['Date'],
-                    y=rolling_load_df['7-Day Average'],
-                    name='7-Day Average',
-                    line=dict(color='#e74c3c', width=3)
-                )
-            )
+            fig.add_trace(go.Scatter(
+                x=rolling_load.index,
+                y=rolling_load.values,
+                name='7-Day Average',
+                line=dict(color='red', width=2)
+            ))
             
-            # Update layout
             fig.update_layout(
-                title=f'{activity_type} Training Load',
-                title_font_size=24,
+                title='Training Load',
                 xaxis_title='Date',
-                xaxis_title_font_size=18,
                 yaxis_title='Training Load',
-                yaxis_title_font_size=18,
-                legend_title_font_size=18,
-                legend_font_size=15,
+                template='plotly_dark',
                 height=600,
-                width=1000,
-                template="plotly_dark"
+                width=1000
             )
             
-            # Save figure
+            # Save the plot
             os.makedirs('data/figures', exist_ok=True)
-            fig.write_html(f'data/figures/{activity_type.lower()}_training_load.html')
-            print(f"{activity_type} training load plot saved to data/figures/")
-        else:
-            print("Heart rate or moving time data not available for training load analysis")
+            fig.write_html('data/figures/training_load.html')
