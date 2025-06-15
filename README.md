@@ -104,14 +104,5 @@ Open the HTML dashboards in your browser for interactive exploration.
 
 ---
 
-## 🤝 Contributing
-Contributions are welcome! Please open issues or pull requests for bug fixes, new features, or improvements. See `CONTRIBUTING.md` for guidelines (or create one if you want to encourage more community involvement).
-
----
-
-## 📄 License
-Specify your license here (e.g., MIT, GPL, etc.).
-
----
 
 **Happy riding and analyzing!** 
