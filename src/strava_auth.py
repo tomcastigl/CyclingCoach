@@ -6,6 +6,7 @@ from http.server import HTTPServer, BaseHTTPRequestHandler
 from urllib.parse import parse_qs, urlparse
 import threading
 import time
+import click
 
 class AuthHandler(BaseHTTPRequestHandler):
     """Handle the OAuth callback from Strava"""
@@ -49,21 +50,21 @@ class AuthHandler(BaseHTTPRequestHandler):
 
 def open_strava_api_settings():
     """Open the Strava API settings page in a browser"""
-    print("Opening Strava API settings page...")
+    click.echo("Opening Strava API settings page...")
     webbrowser.open("https://www.strava.com/settings/api")
     
-    print("\n=== STRAVA APP CREATION INSTRUCTIONS ===")
-    print("1. Log in to your Strava account if needed")
-    print("2. Fill out the 'My API Application' form:")
-    print("   - Application Name: CyclingCoach (or any name you prefer)")
-    print("   - Category: Training Analysis")
-    print("   - Website: http://localhost (for testing)")
-    print("   - Authorization Callback Domain: localhost")
-    print("3. Click 'Create' to create your application")
-    print("4. You'll see your Client ID and Client Secret on the next page")
-    print("===========================================\n")
+    click.echo("\n=== STRAVA APP CREATION INSTRUCTIONS ===")
+    click.echo("1. Log in to your Strava account if needed")
+    click.echo("2. Fill out the 'My API Application' form:")
+    click.echo("   - Application Name: CyclingCoach (or any name you prefer)")
+    click.echo("   - Category: Training Analysis")
+    click.echo("   - Website: http://localhost (for testing)")
+    click.echo("   - Authorization Callback Domain: localhost")
+    click.echo("3. Click 'Create' to create your application")
+    click.echo("4. You'll see your Client ID and Client Secret on the next page")
+    click.echo("===========================================\n")
     
-    input("Press Enter once you've created your Strava application...")
+    click.pause("Press any key once you've created your Strava application...")
 
 def get_auth_code(client_id):
     """Get the authorization code by opening a browser window"""
@@ -77,19 +78,28 @@ def get_auth_code(client_id):
     server_thread.start()
     
     # Open the browser for the user to authorize
-    print("Opening browser for Strava authorization...")
+    click.echo("Opening browser for Strava authorization...")
     webbrowser.open(auth_url)
     
     # Wait for the authorization code
     start_time = time.time()
     timeout = 120  # 2 minutes timeout
     
-    while AuthHandler.code is None:
-        if time.time() - start_time > timeout:
-            print("Authorization timed out. Please try again.")
-            server.shutdown()
-            return None
-        time.sleep(1)
+    with click.progressbar(
+        length=timeout, 
+        label='Waiting for authorization',
+        show_eta=False
+    ) as bar:
+        for i in range(timeout):
+            if AuthHandler.code is not None:
+                break
+            time.sleep(1)
+            bar.update(1)
+    
+    if AuthHandler.code is None:
+        click.echo("Authorization timed out. Please try again.")
+        server.shutdown()
+        return None
     
     # Shutdown the server
     server.shutdown()
@@ -109,8 +119,8 @@ def exchange_code_for_tokens(client_id, client_secret, code):
     response = requests.post(token_url, data=payload)
     
     if response.status_code != 200:
-        print(f"Error: {response.status_code}")
-        print(response.text)
+        click.echo(f"Error: {response.status_code}")
+        click.echo(response.text)
         return None
     
     return response.json()
@@ -125,69 +135,69 @@ def save_tokens(tokens, file_path='config/.env'):
         f.write(f"STRAVA_CLIENT_SECRET={tokens['client_secret']}\n")
         f.write(f"STRAVA_REFRESH_TOKEN={tokens['refresh_token']}\n")
     
-    print(f"Tokens saved to {file_path}")
+    click.echo(f"Tokens saved to {file_path}")
     
     # Also set environment variables for current session
     os.environ['STRAVA_CLIENT_ID'] = str(tokens['client_id'])
     os.environ['STRAVA_CLIENT_SECRET'] = tokens['client_secret']
     os.environ['STRAVA_REFRESH_TOKEN'] = tokens['refresh_token']
     
-    print("Environment variables set for current session")
+    click.echo("Environment variables set for current session")
 
 def main():
     """Main function to get and save Strava tokens"""
-    print("=== Strava Authentication Helper ===")
-    print("This script will help you set up Strava API authentication")
-    print("for the Cycling Coach application.")
+    click.echo(click.style("=== Strava Authentication Helper ===", fg="green", bold=True))
+    click.echo("This script will help you set up Strava API authentication")
+    click.echo("for the Cycling Coach application.")
     
     # Check if .env file already exists
     if os.path.exists('config/.env'):
-        print("\nFound existing configuration file.")
-        use_existing = input("Would you like to use existing credentials? (y/n): ").lower()
-        if use_existing == 'y':
-            print("Using existing credentials.")
+        click.echo("\nFound existing configuration file.")
+        use_existing = click.confirm("Would you like to use existing credentials?", default=True)
+        if use_existing:
+            click.echo("Using existing credentials.")
             return
     
     # Step 1: Create a Strava API application
-    print("\nStep 1: Create a Strava API application")
-    create_app = input("Would you like to open the Strava API settings page to create an app? (y/n): ").lower()
-    if create_app == 'y':
+    click.echo("\nStep 1: Create a Strava API application")
+    create_app = click.confirm("Would you like to open the Strava API settings page to create an app?", default=True)
+    if create_app:
         open_strava_api_settings()
     
     # Step 2: Get Client ID and Secret
-    print("\nStep 2: Enter your Strava API credentials")
-    client_id = input("Client ID: ")
-    client_secret = input("Client Secret: ")
+    click.echo("\nStep 2: Enter your Strava API credentials")
+    client_id = click.prompt("Client ID", type=str)
+    client_secret = click.prompt("Client Secret", type=str, hide_input=True)
     
     # Step 3: Get authorization code
-    print("\nStep 3: Authorizing with Strava")
+    click.echo("\nStep 3: Authorizing with Strava")
     auth_code = get_auth_code(client_id)
     
     if auth_code:
-        print(f"Authorization code received: {auth_code}")
+        click.echo(f"Authorization code received: {auth_code}")
         
         # Step 4: Exchange code for tokens
-        print("\nStep 4: Exchanging authorization code for tokens")
+        click.echo("\nStep 4: Exchanging authorization code for tokens")
         tokens = exchange_code_for_tokens(client_id, client_secret, auth_code)
         
         if tokens:
-            print("Tokens received successfully!")
+            click.echo(click.style("Tokens received successfully!", fg="green"))
             
             # Update tokens with client_id and client_secret
             tokens['client_id'] = client_id
             tokens['client_secret'] = client_secret
             
             # Step 5: Save tokens
-            print("\nStep 5: Saving tokens to configuration file")
+            click.echo("\nStep 5: Saving tokens to configuration file")
             save_tokens(tokens)
             
-            print("\n=== Authentication completed successfully! ===")
-            print("You can now use the Cycling Coach with your Strava account.")
-            print("Run 'python src/main.py' to start using the application.")
+            click.echo(click.style("\n=== Authentication completed successfully! ===", fg="green", bold=True))
+            click.echo("You can now use the Cycling Coach with your Strava account.")
+            click.echo("Run 'coach fetch' to start fetching your activities.")
         else:
-            print("Failed to exchange code for tokens.")
+            click.echo(click.style("Failed to exchange code for tokens.", fg="red"))
     else:
-        print("Failed to get authorization code.")
+        click.echo(click.style("Failed to get authorization code.", fg="red"))
 
 if __name__ == "__main__":
     main() 
