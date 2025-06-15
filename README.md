@@ -1,131 +1,117 @@
-# CyclingCoach 🚴‍♂️
+# CyclingCoach
 
-An intelligent cycling coach assistant that fetches your workout data from Strava, analyzes it, and generates interactive dashboards to help you track your training progress.
+**CyclingCoach** is an open-source tool for cyclists who want to analyze their Strava data, visualize their rides, and track their training progress—all with full control and privacy. It generates beautiful, interactive dashboards and supports user-defined heart rate and power zones.
 
-## Features
+---
 
-- Authenticate with the Strava API to access your cycling data
-- Download and store your recent cycling activities 
-- Analyze your rides with detailed metrics and visualizations:
-  - Weekly distance and time summaries
-  - Heart rate zone distribution
-  - Interactive maps with elevation and speed data
-  - Power metrics (if power data is available)
-  - Comprehensive performance dashboards
+## 🚴‍♂️ Features
+- **Strava Integration**: Fetch and analyze your activities directly from Strava.
+- **Interactive Dashboards**: Visualize heart rate, speed, altitude, route maps, and more.
+- **User-Specified Zones**: Personalize your heart rate and power zones in a simple YAML file.
+- **Training Load & Trends**: Track your training load and performance over time.
+- **Detailed & Basic Analysis**: Run quick summaries or deep-dive into each activity.
+- **Open Source & Extensible**: Easy to contribute, adapt, and extend.
 
-## Installation
+---
 
-### Prerequisites
+## 🚀 Quickstart
 
-- Python 3.7+
-- A Strava account
-- Strava API credentials (from https://www.strava.com/settings/api)
-
-### Setup
-
-1. Clone the repository:
-```
-git clone https://github.com/tomcastigl/CyclingCoach.git
+### 1. Clone the repo
+```sh
+git clone https://github.com/yourusername/CyclingCoach.git
 cd CyclingCoach
 ```
 
-2. Install the package and dependencies:
-```
+### 2. Install dependencies
+We recommend using a virtual environment:
+```sh
+python3 -m venv venv
+source venv/bin/activate
 pip install -e .
 ```
 
-## Usage
-
-CyclingCoach provides a convenient command-line interface for all operations:
-
-### Setup and Authentication
-
-Initialize the application and authenticate with Strava:
-
-```
+### 3. Authenticate with Strava
+Run the setup command and follow the prompts:
+```sh
 coach setup
 ```
+This will guide you through authenticating with Strava and saving your API credentials.
 
-If you need to re-authenticate later:
+---
 
-```
-coach auth
-```
+## 🏁 Usage
 
-### Fetching Activities
+### Fetch and analyze your rides
+- **Fetch activities:**
+  ```sh
+  coach fetch --days 30
+  ```
+- **Basic analysis:**
+  ```sh
+  coach basic --days 30
+  ```
+- **Detailed analysis (all rides):**
+  ```sh
+  coach detailed --all
+  ```
+- **Full workflow (fetch, basic, detailed):**
+  ```sh
+  coach all
+  ```
 
-Download your recent cycling activities:
+Results and visualizations are saved in the `data/figures/` and `data/figures/detailed/` folders.
 
-```
-coach fetch --days 7
-```
+---
 
-### Analysis Options
+## 🛠️ Personalization: Your Zones
 
-Run a quick analysis on your recent activities:
+You can define your own heart rate and power zones in `config/zones.yaml`:
 
-```
-coach basic
-```
+```yaml
+hr_zones:
+  - name: Z1
+    min: 0
+    max: 124
+  - name: Z2
+    min: 125
+    max: 144
+  - name: Z3
+    min: 145
+    max: 164
+  - name: Z4
+    min: 165
+    max: 172
+  - name: Z5
+    min: 173
+    max: 178
+  - name: Z6
+    min: 179
+    max: 185
 
-Generate detailed interactive dashboards:
-
-```
-coach detailed --all
-```
-
-### All-in-One Command
-
-For a complete workflow (fetch, analyze, create dashboards):
-
-```
-coach all
-```
-
-## Interactive Dashboards
-
-The application generates Plotly-based interactive dashboards that include:
-
-- Combined visualizations of heart rate, power, cadence, and speed
-- Color-coded route maps showing elevation and intensity
-- Heart rate zone distribution charts
-- Performance metrics tables
-- Altitude profiles
-
-Dashboards are saved as HTML files in `data/figures/detailed/<activity_id>/dashboard.html`.
-
-## Project Structure
-
-```
-CyclingCoach/
-├── src/               # Core functionality 
-│   ├── analyzer.py    # Basic activity analysis
-│   ├── detailed_activity.py  # Advanced analysis and dashboards
-│   ├── strava_api.py  # Strava API interaction
-│   └── strava_auth.py # Authentication handling
-├── cyclingcoach/      # CLI interface
-├── data/              # Activity data storage
-│   ├── activities/    # Basic activity data (CSV)
-│   ├── detailed/      # Detailed activity data (JSON)
-│   └── figures/       # Generated visualizations
-├── config/            # Configuration files and credentials
-└── pyproject.toml     # Package configuration
+power_zones: []
 ```
 
-## Data Storage
+Edit these values to match your personal training zones. The dashboard will use these for zone-based analysis and pie charts.
 
-- Basic activity summaries are stored as CSV files
-- Detailed activity data is stored in JSON format
-- All visualizations are saved as HTML files for interactive viewing
+---
 
-## Future Development
+## 📂 Outputs
+- **Summary plots**: `data/figures/`
+- **Detailed dashboards**: `data/figures/detailed/<activity_name>_<datetime>/dashboard.html`
+- **Raw and processed data**: `data/streams/`, `data/detailed/`
 
-- Markdown export of activity data for AI-powered analysis
-- Training plan integration to compare actual vs. planned workouts
-- Personalized workout recommendations based on training history
-- Recovery and fatigue tracking
-- Performance trend analysis
+Open the HTML dashboards in your browser for interactive exploration.
 
-## License
+---
 
-MIT 
+## 🤝 Contributing
+Contributions are welcome! Please open issues or pull requests for bug fixes, new features, or improvements. See `CONTRIBUTING.md` for guidelines (or create one if you want to encourage more community involvement).
+
+---
+
+## 📄 License
+Specify your license here (e.g., MIT, GPL, etc.).
+
+---
+
+**Happy riding and analyzing!** 
