@@ -14,12 +14,15 @@ authors = [
 ]
 
 dependencies = [
-    "requests==2.31.0",
-    "python-dotenv==1.0.0",
-    "numpy==1.24.3",
-    "pandas==2.0.3",
-    "plotly==5.15.0",
-    "click==8.1.7",
+    "pandas",
+    "numpy",
+    "requests",
+    "plotly",
+    "matplotlib",
+    "click",
+    "pyyaml",
+    "openai",
+    "python-dotenv",
 ]
 
 [project.optional-dependencies]
