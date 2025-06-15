@@ -32,11 +32,11 @@ class DetailedActivityAnalyzer:
         # Load user zones from YAML
         self.hr_zones = []
         try:
-            with open('config/zones.yaml', 'r') as f:
+            with open('zones.yaml', 'r') as f:
                 zones_config = yaml.safe_load(f)
                 self.hr_zones = zones_config.get('hr_zones', [])
         except Exception as e:
-            print(f"Warning: Could not load HR zones from config/zones.yaml: {e}")
+            print(f"Warning: Could not load HR zones from zones.yaml: {e}")
         
         # Create data directories if they don't exist
         os.makedirs('data/detailed', exist_ok=True)

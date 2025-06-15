@@ -1,0 +1,21 @@
+hr_zones:
+  - name: Z1
+    min: 0
+    max: 124
+  - name: Z2
+    min: 125
+    max: 144
+  - name: Z3
+    min: 145
+    max: 164
+  - name: Z4
+    min: 165
+    max: 172
+  - name: Z5
+    min: 173
+    max: 178
+  - name: Z6
+    min: 179
+    max: 185
+
+power_zones: [] 
