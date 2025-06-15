@@ -11,13 +11,7 @@ import json
 from pathlib import Path
 import click
 
-# Import core functionality
-try:
-    from src import strava_api, analyzer, detailed_activity
-except ImportError:
-    # Adjust import path if running as a package
-    sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
-    from src import strava_api, analyzer, detailed_activity
+from src import strava_api, analyzer, detailed_activity
 from src.strava_auth import main as authenticate
 
 
@@ -161,7 +155,7 @@ def detailed(activity_id, days, activity_type, all):
                 click.echo(f"Analysis saved to {analysis_path}")
             
             # Generate visualizations
-            detailed_analyzer.generate_activity_visualizations(streams_df, activity_id, activity_data.get('name', 'Activity'))
+            detailed_analyzer.generate_activity_visualizations(activity_id, activity_data.get('name', 'Activity'), streams_df)
             click.echo(f"Detailed analysis for activity {activity_id} completed.")
     else:
         # Process multiple activities
@@ -187,7 +181,7 @@ def detailed(activity_id, days, activity_type, all):
                             click.echo(f"Analysis saved to {analysis_path}")
                         
                         # Generate visualizations
-                        detailed_analyzer.generate_activity_visualizations(streams_df, activity_id, row['name'])
+                        detailed_analyzer.generate_activity_visualizations(activity_id, row['name'], streams_df)
                 
                 click.echo("Detailed analysis for all activities completed.")
             else:

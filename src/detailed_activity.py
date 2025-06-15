@@ -361,20 +361,33 @@ class DetailedActivityAnalyzer:
         
         return distribution
     
-    def generate_activity_visualizations(self, df, activity_id, activity_name):
-        """Generate visualizations for activity data"""
-        if df is None or len(df) == 0:
-            return
+    def generate_activity_visualizations(self, activity_id, activity_name, df):
+        """Generate all visualizations for a single activity"""
+        # Create filesystem-friendly activity name
+        safe_name = activity_name.replace(' ', '_')
         
-        # Create a subfolder for the activity
-        os.makedirs(f'data/figures/detailed/{activity_id}', exist_ok=True)
+        # Get activity data to get start time
+        activity_data = self.get_detailed_activity(activity_id)
+        if activity_data and 'start_date_local' in activity_data:
+            start_time = pd.to_datetime(activity_data['start_date_local'])
+            datetime_str = start_time.strftime('%Y%m%d_%H%M%S')
+        else:
+            # Fallback to current time if we can't get activity data
+            datetime_str = datetime.now().strftime('%Y%m%d_%H%M%S')
         
-        # Create a consolidated dashboard for the activity
-        self.create_activity_dashboard(df, activity_id, activity_name)
+        # Create subfolder for this activity using activity name and datetime
+        folder_name = f'{safe_name}_{datetime_str}'
+        os.makedirs(f'data/figures/detailed/{folder_name}', exist_ok=True)
         
-        print(f"Visualizations for activity {activity_id} saved to data/figures/detailed/{activity_id}/")
+        # Create dashboard
+        self.create_activity_dashboard(df, activity_id, activity_name, folder_name)
+        
+        # Create enhanced map
+        self.create_enhanced_map(df, activity_id, 'altitude', 'Altitude (m)', 'earth', folder_name=folder_name)
+        
+        print(f"Visualizations for activity '{activity_name}' saved to data/figures/detailed/{folder_name}/")
     
-    def create_activity_dashboard(self, df, activity_id, activity_name):
+    def create_activity_dashboard(self, df, activity_id, activity_name, folder_name):
         """Create a consolidated dashboard with all visualizations for an activity"""
         # Determine what data is available
         has_hr = 'heartrate' in df.columns and not df['heartrate'].isna().all()
@@ -651,39 +664,49 @@ class DetailedActivityAnalyzer:
         )
         
         # Save as interactive HTML
-        fig.write_html(f'data/figures/detailed/{activity_id}/dashboard.html')
+        fig.write_html(f'data/figures/detailed/{folder_name}/dashboard.html')
         
         # Create individual plots for specific sections (optional)
         
         # 1. If we have map data with altitude or speed, create enhanced maps
         if has_map:
             if has_altitude:
-                self.create_enhanced_map(df, activity_id, 'altitude', 'Altitude (m)', 'earth')
+                self.create_enhanced_map(df, activity_id, 'altitude', 'Altitude (m)', 'earth', folder_name=folder_name)
             
             if has_speed:
-                self.create_enhanced_map(df, activity_id, 'velocity_smooth', 'Speed (km/h)', 'viridis', multiplier=3.6)
+                self.create_enhanced_map(df, activity_id, 'velocity_smooth', 'Speed (km/h)', 'viridis', multiplier=3.6, folder_name=folder_name)
     
-    def create_enhanced_map(self, df, activity_id, color_col, color_label, colorscale, multiplier=1.0):
+    def create_enhanced_map(self, df, activity_id, color_col, color_label, colorscale, multiplier=1.0, folder_name=None):
         """Create an enhanced map visualization with color coding"""
         if color_col in df.columns and 'latitude' in df.columns and 'longitude' in df.columns:
-            data_values = df[color_col] * multiplier
-            
-            fig = px.scatter_mapbox(
-                df, 
-                lat='latitude', 
-                lon='longitude',
-                color=data_values,
-                color_continuous_scale=colorscale,
-                zoom=11,
-                mapbox_style="carto-darkmatter",
-                title=f"Route Map - Color by {color_label}"
-            )
-            
-            fig.update_layout(
-                coloraxis_colorbar=dict(title=color_label),
-                height=800,
-                width=800
-            )
-            
-            # Save as interactive HTML
-            fig.write_html(f'data/figures/detailed/{activity_id}/map_{color_col}.html')
+            try:
+                # Convert to numeric and handle any non-numeric values
+                data_values = pd.to_numeric(df[color_col], errors='coerce')
+                # Apply multiplier only if we have valid numeric data
+                if not data_values.isna().all():
+                    data_values = data_values.astype(float) * float(multiplier)
+                
+                fig = px.scatter_mapbox(
+                    df, 
+                    lat='latitude', 
+                    lon='longitude',
+                    color=data_values,
+                    color_continuous_scale=colorscale,
+                    zoom=11,
+                    mapbox_style="carto-darkmatter",
+                    title=f"Route Map - Color by {color_label}"
+                )
+                
+                fig.update_layout(
+                    coloraxis_colorbar=dict(title=color_label),
+                    height=800,
+                    width=800
+                )
+                
+                # Save as interactive HTML
+                if folder_name:
+                    fig.write_html(f'data/figures/detailed/{folder_name}/map_{color_col}.html')
+                else:
+                    fig.write_html(f'data/figures/detailed/{activity_id}/map_{color_col}.html')
+            except Exception as e:
+                print(f"Warning: Could not create enhanced map for {color_col}: {str(e)}")
