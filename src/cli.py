@@ -13,6 +13,7 @@ import click
 
 from src import strava_api, analyzer, detailed_activity
 from src.strava_auth import main as authenticate
+from src.openai_integration import OpenAICoach
 
 
 def setup_dirs():
@@ -23,6 +24,7 @@ def setup_dirs():
         'data/streams',
         'data/figures',
         'data/figures/detailed',
+        'data/analysis',
         'config'
     ]
     for dir_path in dirs:
@@ -199,8 +201,78 @@ def detailed(activity_id, days, activity_type, all):
 @cli.command()
 @click.option('--days', default=7, help='Number of days to analyze')
 @click.option('--activity_type', default='Ride', help='Type of activity to analyze (e.g., Ride, Run)')
-def all(days, activity_type):
-    """Run all analyses on activities (fetch, basic, detailed)."""
+@click.option('--activity_id', default=None, help='Specific activity ID to analyze')
+@click.option('--output', default='screen', help='Output format: screen or file')
+@click.option('--timeseries/--no-timeseries', default=True, help='Include timeseries data')
+@click.option('--sample_rate', default=30, help='Sample rate for timeseries data (every N points)')
+@click.option('--max_points', default=500, help='Maximum number of data points per activity')
+@click.option('--fields', default='time,distance,heartrate,altitude,velocity_smooth,grade_smooth', 
+              help='Comma-separated list of timeseries fields to include')
+@click.option('--visualizations/--no-visualizations', default=True, 
+              help='Use dashboard visualizations instead of raw timeseries data')
+@click.option('--images/--no-images', default=False, 
+              help='Include base64-encoded images of visualizations')
+@click.option('--max_images', default=3, help='Maximum number of images per activity')
+@click.option('--convert-html/--no-convert-html', default=True, 
+              help='Convert HTML dashboards to images')
+def analyze(days, activity_type, activity_id, output, timeseries, sample_rate, max_points, fields,
+            visualizations, images, max_images, convert_html):
+    """Analyze activities using OpenAI and provide coaching insights."""
+    click.echo("\nRunning OpenAI analysis...")
+    
+    try:
+        # Parse timeseries fields
+        timeseries_fields = fields.split(',') if fields else None
+        
+        # Initialize OpenAI coach
+        coach = OpenAICoach()
+        
+        # Run analysis
+        analysis = coach.analyze_activities(
+            days=days, 
+            activity_type=activity_type, 
+            activity_id=activity_id,
+            include_timeseries=timeseries,
+            sample_rate=sample_rate,
+            max_points=max_points,
+            timeseries_fields=timeseries_fields,
+            use_visualizations=visualizations,
+            include_images=images,
+            max_images=max_images
+        )
+        
+        if output == 'file':
+            # Save analysis to file
+            filename = coach.save_analysis(analysis)
+            click.echo(f"\nAnalysis saved to {filename}")
+        else:
+            # Print analysis to screen
+            click.echo("\n" + analysis)
+            
+    except Exception as e:
+        click.echo(f"Error during OpenAI analysis: {str(e)}")
+
+
+@cli.command()
+@click.option('--days', default=7, help='Number of days to analyze')
+@click.option('--activity_type', default='Ride', help='Type of activity to analyze (e.g., Ride, Run)')
+@click.option('--activity_id', default=None, help='Specific activity ID to analyze')
+@click.option('--all', is_flag=True, help='Run all analyses including OpenAI')
+@click.option('--timeseries/--no-timeseries', default=True, help='Include timeseries data in OpenAI analysis')
+@click.option('--sample_rate', default=30, help='Sample rate for timeseries data (every N points)')
+@click.option('--max_points', default=500, help='Maximum number of data points per activity')
+@click.option('--fields', default='time,distance,heartrate,altitude,velocity_smooth,grade_smooth', 
+              help='Comma-separated list of timeseries fields to include')
+@click.option('--visualizations/--no-visualizations', default=True, 
+              help='Use dashboard visualizations instead of raw timeseries data')
+@click.option('--images/--no-images', default=False, 
+              help='Include base64-encoded images of visualizations')
+@click.option('--max_images', default=3, help='Maximum number of images per activity')
+@click.option('--convert-html/--no-convert-html', default=True, 
+              help='Convert HTML dashboards to images')
+def all(days, activity_type, activity_id, all, timeseries, sample_rate, max_points, fields,
+        visualizations, images, max_images, convert_html):
+    """Run all analyses on activities (fetch, basic, detailed, and optionally OpenAI)."""
     click.echo(f"Running complete analysis for the past {days} days...")
     
     # First, fetch the latest activities
@@ -210,7 +282,27 @@ def all(days, activity_type):
     basic.callback(days=days, activity_type=activity_type)
     
     # Run detailed analysis on all activities
-    detailed.callback(days=days, activity_type=activity_type, activity_id=None, all=True)
+    detailed.callback(days=days, activity_type=activity_type, activity_id=activity_id, all=True)
+    
+    # Run OpenAI analysis if requested
+    if all:
+        # Parse timeseries fields
+        timeseries_fields = fields.split(',') if fields else None
+        
+        analyze.callback(
+            days=days, 
+            activity_type=activity_type, 
+            activity_id=activity_id, 
+            output='file',
+            timeseries=timeseries,
+            sample_rate=sample_rate,
+            max_points=max_points,
+            fields=fields,
+            visualizations=visualizations,
+            images=images,
+            max_images=max_images,
+            convert_html=convert_html
+        )
     
     click.echo("\nComplete analysis finished! All results saved to data/ directory.")
 
